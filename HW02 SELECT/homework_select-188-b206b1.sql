@@ -152,7 +152,7 @@ join Purchasing.PurchaseOrders as pp on pp.SupplierID=ps.SupplierID
 join Application.DeliveryMethods as adm on adm.DeliveryMethodID=ps.DeliveryMethodID
 join Application.People as ap on ap.PersonID=ps.AlternateContactPersonID
 where (pp.ExpectedDeliveryDate between '2013-01-01' and '2013-01-31')
-	and (adm.DeliveryMethodName like 'Air Freight' or adm.DeliveryMethodName like 'Refrigerated Air Freight')
+	and adm.DeliveryMethodName in ('Air Freight', 'Refrigerated Air Freight')
 	and pp.IsOrderFinalized is not NULL
 
 /*
@@ -180,4 +180,4 @@ ap.PersonID as [ид]
 from Application.People as ap
 join Purchasing.Suppliers as ps on ap.PersonID=ps.AlternateContactPersonID
 join Warehouse.StockItems as ws on ws.SupplierID=ps.SupplierID
-where ws.StockItemName like '%Chocolate frogs 250g%'
+where ws.StockItemName like 'Chocolate frogs 250g'
