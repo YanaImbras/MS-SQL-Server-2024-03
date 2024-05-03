@@ -23,6 +23,7 @@ https://github.com/Microsoft/sql-server-samples/releases/tag/wide-world-importer
 
 USE WideWorldImporters
 
+
 /*
 1. Выберите сотрудников (Application.People), которые являются продажниками (IsSalesPerson), 
 и не сделали ни одной продажи 04 июля 2015 года. 
@@ -30,6 +31,9 @@ USE WideWorldImporters
 Продажи смотреть в таблице Sales.Invoices.
 */
 
+with TotalSalesCountCTE 
+		as 
+		(
 SELECT 
 	PersonId
 	, FullName
@@ -41,6 +45,12 @@ SELECT
 		) AS TotalSalesCount
 FROM Application.People
 WHERE IsSalesperson = 1
+		)
+
+Select
+*
+from TotalSalesCountCTE 
+where TotalSalesCount = 0;
 
 
 
@@ -49,7 +59,7 @@ WHERE IsSalesperson = 1
 Вывести: ИД товара, наименование товара, цена.
 */
 
-select  
+select  top 1
 	sol.OrderLineID
 	, sol.Description
 	, (
@@ -59,30 +69,31 @@ select
 		where sol1.OrderLineID=sol.OrderLineID
 		) as [Минимальная цена]
 from Sales.OrderLines as sol
-order by sol.OrderLineID, sol.Description
+order by [Минимальная цена], sol.OrderLineID
 
 /*2 Вариант*/
-select  
+select  top 1
 	sol.OrderLineID
 	, sol.Description
 	, min (sol.UnitPrice) as [Минимальная цена]
 from Sales.OrderLines as sol
 group by sol.UnitPrice, sol.OrderLineID, sol.Description
-order by sol.OrderLineID, sol.Description
+order by [Минимальная цена]
 
 /*3 Вариант*/
-select  
+select  top 1
 	sol.OrderLineID
 	, sol.Description
 	, sol.UnitPrice
 from Sales.OrderLines as sol
 where exists(
-		select
+		select 
 		min (sol1.UnitPrice)
 		from Sales.OrderLines as sol1
 		where sol1.OrderLineID=sol.OrderLineID
 		)
-order by sol.OrderLineID, sol.Description
+order by sol.UnitPrice
+
 
 /*
 3. Выберите информацию по клиентам, которые перевели компании пять максимальных платежей 
@@ -92,72 +103,54 @@ order by sol.OrderLineID, sol.Description
 
 /* Вариант 1*/
 
-select top 5
-CustomerID
-, TransactionAmount
-from Sales.CustomerTransactions as sct
-order by sct.TransactionAmount desc;
+Select
+*
+, sc.CustomerName
+From (
+SELECT 
+	CustomerID
+	,ROW_NUMBER() OVER(order by TransactionAmount desc) 
+    AS R
+FROM Sales.CustomerTransactions
+) as t
+join Sales.Customers as sc on sc.CustomerID = t.CustomerID
+Where t.R <= 5;
 
 /* Вариант 2*/
 
-SELECT * FROM (
-    SELECT TOP 5 CustomerID, TransactionAmount    FROM Sales.CustomerTransactions
-    ORDER BY TransactionAmount DESC) AS TopTransactions
-ORDER BY TransactionAmount DESC;
-
-/* Вариант 3*/
-
-select
-*
-From (
-SELECT 
-	*
-	,ROW_NUMBER() OVER(PARTITION BY CustomerID order by TransactionAmount desc) 
-    AS R
-FROM Sales.CustomerTransactions
-) as t
-Where t.R < 5;
-
-/* Вариант 4*/
-
-Select
-*
-From (
-SELECT 
-  ROW_NUMBER() OVER(order by TransactionAmount desc) 
-    AS R
-FROM Sales.CustomerTransactions
-) as t
-Where t.R <= 5;
-
-/* Вариант 5*/
-
 WITH RankedTransactions AS 
 	(SELECT 
-	CustomerID
+	 sct.CustomerID
+	 , sc.CustomerName
 	, TransactionAmount
-	, RANK() OVER (ORDER BY TransactionAmount DESC) AS Rank    FROM Sales.CustomerTransactions
+	, RANK() OVER (ORDER BY TransactionAmount DESC) AS Rank    
+	FROM Sales.CustomerTransactions as sct
+	join Sales.Customers as sc on sc.CustomerID = sct.CustomerID
 	)
 
 SELECT 
 CustomerID
+, CustomerName
 , TransactionAmount
 FROM RankedTransactions 
 WHERE Rank <= 5;
 
-/* Вариант 6*/
+/* Вариант 3*/
 
 WITH TopTransactions AS 
 	(
 	SELECT TOP 5 
-	CustomerID
+	sct.CustomerID
+	, sc.CustomerName
 	, TransactionAmount
-		FROM Sales.CustomerTransactions   
+		FROM Sales.CustomerTransactions  as sct
+	join Sales.Customers as sc on sc.CustomerID = sct.CustomerID  
 		ORDER BY TransactionAmount DESC
 	)
 
 SELECT 
 	CustomerID
+	, CustomerName
 	, TransactionAmount
 FROM TopTransactions;
 
@@ -168,28 +161,32 @@ FROM TopTransactions;
 который осуществлял упаковку заказов (PackedByPersonID).
 */
 
-WITH UnitPriceCTE
-	AS (
-	select top 3
-	sc.CustomerID 
-	,so.PickedByPersonID 
-	, wsi.UnitPrice 
-from Sales.Customers as sc
-join Sales.Orders as so on so.CustomerID=sc.CustomerID 
-join Sales.OrderLines as l on l.OrderID =so.OrderID -- товары берем из деталей заказа
-join [Warehouse].[StockItems] as wsi on wsi.StockItemID = l.StockItemID
-order by wsi.RecommendedRetailPrice desc
+
+WITH RankedTransactions AS 
+	(SELECT distinct
+	 wsi.StockItemID 
+	 ,wsi.UnitPrice
+	, ROW_NUMBER() OVER(order by wsi.UnitPrice desc) AS [ROW]    
+from [Warehouse].[StockItems] as wsi
+group by wsi.StockItemID, wsi.UnitPrice 
 	)
 
-select
-ac.CityID as [ID Города]
+SELECT  distinct
+so.CustomerID
+, so.PickedByPersonID
+, ap.FullName
+, ac.CityID as [ID Города]
 , ac.CityName as [Город]
-, U.PickedByPersonID 
-, U.UnitPrice 
-from Sales.Customers as sc
-join [Application].[Cities] as ac on ac.CityID=sc.DeliveryCityID
-join  UnitPriceCTE as U on U.CustomerID=sc.CustomerID
-
+, RT.UnitPrice
+FROM RankedTransactions as RT
+left join [Warehouse].[StockItems] as wsi on wsi.StockItemID = RT.StockItemID
+left join Sales.OrderLines as l on l.StockItemID =wsi.StockItemID
+left join Sales.Orders as so on so.OrderID=l.OrderID 
+left join Sales.Customers as sc on sc.CustomerID=so.CustomerID
+left join [Application].[Cities] as ac on ac.CityID=sc.DeliveryCityID
+left join [Application].[People] as ap on ap.PersonID = so.PickedByPersonID
+WHERE [ROW] <= 3
+order by RT.UnitPrice desc;
 
 -- ---------------------------------------------------------------------------
 -- Опциональное задание
