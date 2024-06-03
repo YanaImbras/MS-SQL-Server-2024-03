@@ -55,7 +55,7 @@ CREATE TABLE [Products] (
     [ProductsArticle] int  NOT NULL ,
     [ProductsLink] varchar(250)  NOT NULL ,
     [ProductsBarCode] varchar(250)  NOT NULL ,
-    [ProductsType] int  NOT NULL ,
+    [TypeProductid] int  NOT NULL ,
     [CustomerId] int  NOT NULL ,
     [SupplierId] int  NOT NULL ,
     [ProductsUnit] varchar(250)  NOT NULL ,
@@ -65,7 +65,8 @@ CREATE TABLE [Products] (
         [Productsid]
     ),
     FOREIGN KEY ([CustomerId]) REFERENCES [Customer]([CustomerId]),
-    FOREIGN KEY ([SupplierId]) REFERENCES [Supplier]([SupplierId])
+    FOREIGN KEY ([SupplierId]) REFERENCES [Supplier]([SupplierId]),
+	FOREIGN KEY ([TypeProductid]) REFERENCES [TypeProduct]([TypeProductid])
 );
 
 CREATE TABLE [Operation_status] (
