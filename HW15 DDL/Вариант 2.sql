@@ -63,7 +63,9 @@ CREATE TABLE [Products] (
     [DeliveryId] int  NOT NULL ,
     PRIMARY KEY (
         [Productsid]
-    )
+    ),
+    FOREIGN KEY ([CustomerId]) REFERENCES [Customer]([CustomerId]),
+    FOREIGN KEY ([SupplierId]) REFERENCES [Supplier]([SupplierId])
 );
 
 CREATE TABLE [Operation_status] (
@@ -95,6 +97,17 @@ CREATE TABLE [TypeProduct] (
     )
 );
 
+CREATE TABLE [Delivery] (
+    [DeliveryId] int  NOT NULL ,
+    [Productsid] int  NOT NULL ,
+    [DeliverySize] int  NOT NULL ,
+    [DeliveryDate] Date  NOT NULL ,
+    PRIMARY KEY (
+        [DeliveryId]
+    ),
+	FOREIGN KEY ([ProductsId]) REFERENCES [Products]([ProductsId])
+);
+
 CREATE TABLE [Order] (
     [OrderId] int  NOT NULL ,
     [OrderBarCode] varchar(250)  NOT NULL ,
@@ -110,48 +123,15 @@ CREATE TABLE [Order] (
     [Quantity] int  NOT NULL ,
     PRIMARY KEY (
         [OrderId]
-    )
+    ),
+	FOREIGN KEY ([ProductsId]) REFERENCES [Products]([ProductsId]),
+    FOREIGN KEY ([DeliveryId]) REFERENCES [Delivery]([DeliveryId]),
+    FOREIGN KEY ([CustomerId]) REFERENCES [Customer]([CustomerId]),
+    FOREIGN KEY ([SupplierId]) REFERENCES [Supplier]([SupplierId]),
+    FOREIGN KEY ([StoreId]) REFERENCES [Store]([StoreId]),
+    FOREIGN KEY ([StatusId]) REFERENCES [Operation_status]([StatusId]),
+    FOREIGN KEY ([WorkerId]) REFERENCES [Worker]([WorkerId])
 );
-
-CREATE TABLE [Delivery] (
-    [DeliveryId] int  NOT NULL ,
-    [Productsid] int  NOT NULL ,
-    [DeliverySize] int  NOT NULL ,
-    [DeliveryDate] Date  NOT NULL ,
-    PRIMARY KEY (
-        [DeliveryId]
-    )
-);
-
-ALTER TABLE [Supplier] ADD CONSTRAINT fk_Supplier_SupplierId FOREIGN KEY([SupplierId])
-REFERENCES [Order] ([SupplierId]);
-
-ALTER TABLE [Customer] ADD CONSTRAINT fk_Customer_CustomerId FOREIGN KEY([CustomerId])
-REFERENCES [Order] ([CustomerId]);
-
-ALTER TABLE [Store] ADD CONSTRAINT fk_Store_StoreId FOREIGN KEY([`StoreId])
-REFERENCES [Order] ([StoreId]);
-
-ALTER TABLE [Products] ADD CONSTRAINT fk_Products_Productsid FOREIGN KEY([Productsid])
-REFERENCES [Order] ([Productsid]);
-
-ALTER TABLE [Products] ADD CONSTRAINT fk_Products_CustomerId FOREIGN KEY([CustomerId])
-REFERENCES [Customer] ([CustomerId]);
-
-ALTER TABLE [Products] ADD CONSTRAINT fk_Products_SupplierId FOREIGN KEY([SupplierId])
-REFERENCES [Supplier] ([SupplierId]);
-
-ALTER TABLE [Operation_status] ADD CONSTRAINT fk_Operation_status_Statusid FOREIGN KEY([Statusid])
-REFERENCES [Order] ([Statusid]);
-
-ALTER TABLE [Worker] ADD CONSTRAINT fk_Worker_Workerid FOREIGN KEY([Workerid])
-REFERENCES [Order] ([Workerid]);
-
-ALTER TABLE [TypeProduct] ADD CONSTRAINT fk_TypeProduct_TypeProductid FOREIGN KEY([TypeProductid])
-REFERENCES [Products] ([ProductsType]);
-
-ALTER TABLE [Delivery] ADD CONSTRAINT fk_Delivery_DeliveryId FOREIGN KEY([DeliveryId])
-REFERENCES [Order] ([DeliveryId]);
 
 create index idx_Delivery on [Delivery] ([DeliveryId]);
 create index idx_Supplier on [Supplier] ([SupplierId]);
