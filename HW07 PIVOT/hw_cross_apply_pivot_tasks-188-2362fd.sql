@@ -39,8 +39,35 @@ InvoiceMonth | Peeples Valley, AZ | Medicine Lodge, KS | Gasport, NY | Sylvanite
 -------------+--------------------+--------------------+-------------+--------------+------------
 */
 
-напишите здесь свое решение
+Select 
+InvoiceMonth
+,[Tailspin Toys (Peeples Valley, AZ)] as [Peeples Valley, AZ]
+,[Tailspin Toys (Medicine Lodge, KS)] as [Medicine Lodge, KS]
+,[Tailspin Toys (Gasport, NY)] as [Gasport, NY]
+,[Tailspin Toys (Sylvanite, MT)] as [Sylvanite, MT]
+,[Tailspin Toys (Jessie, ND)] as [Jessie, ND] 
+from
+(
+select   
+FORMAT(DATEADD(MM, DATEDIFF(MM, 0, si.InvoiceDate), 0), 'dd.MM.yyyy') as InvoiceMonth
+,(
+select sc.CustomerName 
+from Sales.Customers sc 
+where sc.CustomerID = si.CustomerID
+) as CustomerName
+from Sales.Invoices si
+where si.CustomerID  between 2 and 6
+) as st
+PIVOT 
+(
+count (CustomerName) 
+for CustomerName
+in ([Tailspin Toys (Sylvanite, MT)],[Tailspin Toys (Peeples Valley, AZ)],[Tailspin Toys (Medicine Lodge, KS)],[Tailspin Toys (Gasport, NY)],[Tailspin Toys (Jessie, ND)])
+) as pt
+order by year(InvoiceMonth), month(InvoiceMonth)
 
+
+go
 /*
 2. Для всех клиентов с именем, в котором есть "Tailspin Toys"
 вывести все адреса, которые есть в таблице, в одной колонке.
@@ -56,7 +83,21 @@ Tailspin Toys (Head Office) | Ribeiroville
 ----------------------------+--------------------
 */
 
-напишите здесь свое решение
+Select 
+CustomerName
+,AddressLine
+from(
+select CustomerName
+,DeliveryAddressLine1
+,DeliveryAddressLine2
+,PostalAddressLine1
+,PostalAddressLine2 
+from Sales.Customers
+where CustomerName Like '%Tailspin Toys%'	
+) as Customers
+UNPIVOT (AddressLine for Name in (DeliveryAddressLine1, DeliveryAddressLine2, PostalAddressLine1, PostalAddressLine2)) as t
+
+go
 
 /*
 3. В таблице стран (Application.Countries) есть поля с цифровым кодом страны и с буквенным.
@@ -74,11 +115,72 @@ CountryId | CountryName | Code
 ----------+-------------+-------
 */
 
-напишите здесь свое решение
+Select 
+CountryID
+,CountryName
+,Code
+from
+(
+select 
+CountryID
+,CountryName
+,CAST(IsoAlpha3Code AS NVARCHAR) as Alpha3Code
+,CAST(IsoNumericCode AS NVARCHAR) as NumericCode
+from Application.Countries
+) as Country
+	UNPIVOT (Code for Name in (Alpha3Code, NumericCode)) as t
 
+go
 /*
 4. Выберите по каждому клиенту два самых дорогих товара, которые он покупал.
 В результатах должно быть ид клиета, его название, ид товара, цена, дата покупки.
 */
 
-напишите здесь свое решение
+With SEO
+as (
+select
+si.CustomerID as [ид клиета]
+ ,sc.CustomerName as [название клиета]
+ ,sil.StockItemID as [ид товара]
+ ,si.InvoiceDate as [дата покупки]
+ ,sil.UnitPrice as [цена]
+ ,ROW_NUMBER() OVER(PARTITION BY si.CustomerID order by sil.UnitPrice desc) as [Num]
+from Sales.Invoices as si
+join Sales.InvoiceLines as sil on sil.InvoiceID=si.InvoiceID
+join Sales.Customers sc on si.CustomerID = sc.CustomerID
+Group by sil.StockItemID, si.CustomerID, sc.CustomerName, si.InvoiceDate, sil.UnitPrice
+)
+Select 
+ SEO.[ид клиета]
+ ,SEO.[название клиета]
+ ,SEO.[ид товара]
+ ,SEO.[дата покупки]
+ ,SEO.[цена]
+from SEO
+where SEO.[Num] <= 2
+
+go
+
+Select
+ sc.CustomerID as [ид клиета]
+ ,sc.CustomerName as [название клиета]
+ ,t.StockItemID as [ид товара]
+ ,t.InvoiceDate as [дата покупки]
+ ,t.UnitPrice as [цена]
+from Sales.Customers as sc
+CROSS APPLY(
+select top 2 
+si.CustomerID 
+,(
+select sc.CustomerName 
+from Sales.Customers as sc 
+where sc.CustomerID = si.CustomerID
+) as CustomerName
+,sil.StockItemID
+,sil.UnitPrice
+,si.InvoiceDate
+from Sales.Invoices si
+join Sales.InvoiceLines sil on si.invoiceId = sil.InvoiceID
+where si.CustomerID = sc.CustomerID
+Order by sil.UnitPrice desc 
+) as t
