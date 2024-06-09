@@ -260,3 +260,10 @@ FROM Warehouse.StockItems
 CROSS APPLY OPENJSON(CustomFields) CF
 WHERE CF.value like '%Vintage%'
 
+SELECT
+si.StockItemID,
+si.StockItemName
+FROM Warehouse.StockItems si
+--CROSS APPLY OPENJSON(si.CustomFields,'$.Tags') as t
+CROSS APPLY OPENJSON(JSON_QUERY(si.CustomFields, '$.Tags')) as t
+WHERE t.value = 'Vintage' 
