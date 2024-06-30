@@ -41,5 +41,31 @@ InvoiceMonth | Aakriti Byrraju    | Abel Spirlea       | Abel Tatarescu | ... (�
 -------------+--------------------+--------------------+----------------+----------------------
 */
 
+declare @dml as nvarchar(max)
+declare @ColumnName as nvarchar(max)
 
-напишите здесь свое решение
+select @ColumnName = isnull(@ColumnName + ',', '') + QUOTENAME(NAMES)
+from 
+(
+	select distinct 
+	c.CustomerName as NAMES
+	from Sales.Invoices as i
+	join Sales.Customers as c on c.CustomerID = i.CustomerID
+) as t
+
+select @ColumnName as ColumnName
+
+set @dml = N'Select InvoiceMonth, ' + @ColumnName + ' from 
+(
+select  
+  CONVERT(nvarchar,CAST(DATEADD(month,DATEDIFF(month,0,i.InvoiceDate),0) as date),104) as InvoiceMonth, 
+  i.InvoiceID as numberpurchases, 
+  c.CustomerName as NAMES 
+from Sales.Invoices as i 
+join Sales.Customers as c on c.CustomerID = i.CustomerID 
+  ) as t 
+pivot(count(numberpurchases) for NAMES in (' + @ColumnName + ')) as pvttable 
+order by InvoiceMonth;';
+
+select @dml as command;
+exec sp_executesql @dml
