@@ -1,7 +1,3 @@
-/*
-Этот текст запроса был извлечен из XML-файла showplan и может быть усечен.
-*/
-
 Select 
 	ord.CustomerID, 
 	det.StockItemID, 
