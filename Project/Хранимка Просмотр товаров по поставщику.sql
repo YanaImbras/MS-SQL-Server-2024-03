@@ -22,3 +22,4 @@ join dbo.Products as p on p.CustomerId=c.CustomerId
 where c.CustomerName = @Customer
 END
 GO
+
