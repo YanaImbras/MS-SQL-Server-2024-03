@@ -11,7 +11,7 @@ AS
 BEGIN
 	DECLARE @Result numeric(18,2)
 	SELECT @Result=
-(
+( 
 SELECT 
 Sum(P.ProductsUnit*PW.[Sum]) as [Sum]
 FROM [Order] AS O

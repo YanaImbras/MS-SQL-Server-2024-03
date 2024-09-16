@@ -40,10 +40,10 @@ FROM Sales.Orders AS ord
 	JOIN Sales.OrderLines AS det ON det.OrderID = ord.OrderID
 	JOIN Sales.Invoices AS Inv ON Inv.OrderID = ord.OrderID 
 									AND Inv.BillToCustomerID != ord.CustomerID --вынесено
-	JOIN Sales.CustomerTransactions AS Trans ON Trans.InvoiceID = Inv.InvoiceID
+--	JOIN Sales.CustomerTransactions AS Trans ON Trans.InvoiceID = Inv.InvoiceID --не используется. убираем
 	JOIN Warehouse.StockItems AS It ON It.StockItemID = det.StockItemID 
 									AND It.SupplierId = 12 --вынесено из доп.селект
-	JOIN Warehouse.StockItemTransactions AS ItemTrans ON ItemTrans.StockItemID = det.StockItemID
+--	JOIN Warehouse.StockItemTransactions AS ItemTrans ON ItemTrans.StockItemID = det.StockItemID --не используется. убираем
 WHERE DATEDIFF(DAY, Inv.InvoiceDate, ord.OrderDate) = 0
 AND (
         SELECT 

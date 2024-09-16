@@ -160,11 +160,8 @@ GO
 
 
 --Искуственые индексы. Планируется использование только для связи таблиц.
-create index idx_Delivery on [Delivery] ([DeliveryId]);
-create index idx_Worker on [Worker] ([WorkerId]);
-create index idx_Customer on [Customer] ([CustomerId]);
-create index idx_Store on [Store] ([StoreId]);
-create index idx_Products on [Products] ([ProductsId]);
-create index idx_Order on [Order] ([OrderId]);
-create index idx_ProductsType on [ProductsType] ([ProductsTypeId]);
-create index idx_ProductsWork on [ProductsWork] ([ProductsWorkId]);
+create index idx_Delivery on [Order] ([DeliveryId]);
+create index idx_Worker on [OrderBox] ([WorkerId]);
+create index idx_Customer on [Products] ([CustomerId]);
+create index idx_Products on [Delivery] ([ProductsId]);
+create index idx_Order on [OrderBox] ([OrderId]);

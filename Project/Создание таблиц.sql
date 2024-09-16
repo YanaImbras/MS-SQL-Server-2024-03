@@ -170,3 +170,4 @@ GO
 --create index idx_Order on [Order] ([OrderId]);
 --create index idx_ProductsType on [ProductsType] ([ProductsTypeId]);
 --create index idx_ProductsWork on [ProductsWork] ([ProductsWorkId]);
+
